@@ -72,3 +72,41 @@ The application combines:
 ---
 
 ## 🧩 Architecture
+Frontend (React)
+↓
+Backend (Flask API)
+↓
+TMDB API
+↓
+SQLite Database
+
+
+---
+
+## 📂 Project Structure
+
+
+recommender-app/
+│
+├── backend/
+│ ├── app.py
+│ ├── database.py
+│ └── database.db
+│
+├── frontend/
+│ ├── src/
+│ ├── package.json
+│ └── ...
+│
+└── README.md
+
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/movie-series-recommender.git
+cd movie-series-recommeder
