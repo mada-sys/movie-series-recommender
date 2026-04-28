@@ -340,3 +340,19 @@ PERSONALITY_DIMENSION_RULES = {
         "D": {"imagination": 2, "adventure": 1}
     }
 }
+DIMENSION_LABELS = {
+    "comfort": "comfort-seeking",
+    "emotion": "emotionally driven",
+    "introspection": "introspective",
+    "social": "socially oriented",
+    "curiosity": "curious",
+    "energy": "high-energy",
+    "intensity": "intensity-seeking",
+    "darkness": "dark / mysterious",
+    "imagination": "imaginative",
+    "realism": "realism-oriented",
+    "ambiguity": "ambiguity-tolerant",
+    "suspense": "suspense-oriented",
+    "logic": "analytical",
+    "adventure": "adventure-seeking"
+}
