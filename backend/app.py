@@ -77,3 +77,21 @@ TV_MOOD_BONUS_GENRES = {
     "Emotional": [18, 10751],
     "Fun": [35, 16, 10762]
 }
+# Maps the user's mood profile cluster to the movie/TV genre names that
+# should receive a bonus. The scoring function looks up the right ID map
+# for the requested content type.
+MOOD_PROFILE_TO_GENRES = {
+    "intense_and_dark": ["Thriller", "Crime", "Action", "Horror"],
+    "emotional_and_reflective": ["Drama", "Romance"],
+    "cerebral_and_mysterious": ["Mystery", "Sci-Fi", "Thriller"],
+    "imaginative_and_exploratory": ["Sci-Fi", "Fantasy", "Adventure"],
+    "light_and_feel_good": ["Comedy", "Animation", "Romance"]
+}
+
+MOOD_PROFILE_REASONS = {
+    "intense_and_dark": "fits your intense / dark personality profile",
+    "emotional_and_reflective": "fits your emotional / reflective personality profile",
+    "cerebral_and_mysterious": "fits your cerebral / mysterious personality profile",
+    "imaginative_and_exploratory": "fits your imaginative / exploratory personality profile",
+    "light_and_feel_good": "fits your light / feel-good personality profile"
+}
