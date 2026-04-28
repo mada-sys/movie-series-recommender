@@ -525,3 +525,153 @@ def delete_personality_test(user_id):
     cursor.execute("DELETE FROM personality_tests WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
+# =========================
+# PERSONALITY PROFILE
+# =========================
+def get_discovery_level(dimensions):
+    exploration_score = dimensions["curiosity"] + dimensions["ambiguity"] + dimensions["adventure"]
+    comfort_score = dimensions["comfort"]
+
+    if exploration_score >= comfort_score + 4:
+        return "High"
+    if exploration_score >= comfort_score + 1:
+        return "Medium"
+    return "Low"
+
+
+def get_intensity_level(dimensions):
+    score = dimensions["intensity"] + dimensions["energy"]
+    calm_score = dimensions["comfort"]
+
+    if score >= calm_score + 4:
+        return "High"
+    if score >= calm_score + 1:
+        return "Medium"
+    return "Low"
+
+
+def get_social_style(dimensions):
+    if dimensions["social"] >= dimensions["introspection"] + 2:
+        return "Social"
+    if dimensions["introspection"] >= dimensions["social"] + 2:
+        return "Introspective"
+    return "Balanced"
+
+
+def get_mood_profile(dimensions):
+    cluster_scores = {
+        "light_and_feel_good": dimensions["comfort"] + dimensions["social"] + dimensions["emotion"] * 0.5,
+        "emotional_and_reflective": dimensions["emotion"] + dimensions["introspection"],
+        "intense_and_dark": dimensions["intensity"] + dimensions["darkness"] + dimensions["suspense"],
+        "cerebral_and_mysterious": dimensions["logic"] + dimensions["ambiguity"] + dimensions["curiosity"] * 0.5,
+        "imaginative_and_exploratory": dimensions["imagination"] + dimensions["curiosity"] + dimensions["adventure"]
+    }
+
+    mood_key = max(cluster_scores, key=cluster_scores.get)
+    mood_labels = {
+        "light_and_feel_good": "Light and feel-good",
+        "emotional_and_reflective": "Emotional and reflective",
+        "intense_and_dark": "Intense and dark",
+        "cerebral_and_mysterious": "Cerebral and mysterious",
+        "imaginative_and_exploratory": "Imaginative and exploratory"
+    }
+
+    return mood_key, mood_labels[mood_key]
+
+
+def build_genre_scores(dimensions):
+    raw_scores = {
+        "Drama": dimensions["emotion"] * 1.5 + dimensions["introspection"] * 1.3 + dimensions["realism"] * 0.7,
+        "Romance": dimensions["emotion"] * 1.3 + dimensions["comfort"] * 0.8 + dimensions["social"] * 0.6,
+        "Comedy": max(0, dimensions["comfort"] * 1.4 + dimensions["social"] * 0.8 + dimensions["energy"] * 0.4 - dimensions["darkness"] * 0.2),
+        "Action": dimensions["intensity"] * 1.4 + dimensions["energy"] * 1.2 + dimensions["adventure"] * 0.8,
+        "Thriller": dimensions["suspense"] * 1.5 + dimensions["darkness"] * 1.1 + dimensions["intensity"] * 0.7,
+        "Mystery": dimensions["ambiguity"] * 1.4 + dimensions["logic"] * 1.0 + dimensions["suspense"] * 0.7,
+        "Sci-Fi": dimensions["imagination"] * 1.4 + dimensions["curiosity"] * 1.2 + dimensions["logic"] * 0.7,
+        "Fantasy": dimensions["imagination"] * 1.3 + dimensions["adventure"] * 1.0 + dimensions["comfort"] * 0.4,
+        "Adventure": dimensions["adventure"] * 1.4 + dimensions["curiosity"] * 1.0 + dimensions["energy"] * 0.8,
+        "Crime": dimensions["darkness"] * 0.9 + dimensions["suspense"] * 0.9 + dimensions["realism"] * 0.8,
+        "Animation": dimensions["comfort"] * 0.9 + dimensions["imagination"] * 0.8 + dimensions["emotion"] * 0.4,
+        "Horror": dimensions["darkness"] * 1.4 + dimensions["intensity"] * 0.9 + dimensions["suspense"] * 1.0
+    }
+
+    return dict(sorted(raw_scores.items(), key=lambda item: item[1], reverse=True))
+
+
+def build_personality_profile(answers):
+    dimensions = {
+        "comfort": 0,
+        "emotion": 0,
+        "introspection": 0,
+        "social": 0,
+        "curiosity": 0,
+        "energy": 0,
+        "intensity": 0,
+        "darkness": 0,
+        "imagination": 0,
+        "realism": 0,
+        "ambiguity": 0,
+        "suspense": 0,
+        "logic": 0,
+        "adventure": 0
+    }
+
+    for question_id, option_map in PERSONALITY_DIMENSION_RULES.items():
+        answer = answers.get(question_id)
+        if answer in option_map:
+            for dimension, value in option_map[answer].items():
+                dimensions[dimension] += value
+
+    sorted_dimensions = sorted(dimensions.items(), key=lambda item: item[1], reverse=True)
+    top_traits = [
+        {
+            "key": key,
+            "label": DIMENSION_LABELS.get(key, key),
+            "score": score
+        }
+        for key, score in sorted_dimensions[:4]
+    ]
+
+    genre_scores_raw = build_genre_scores(dimensions)
+    recommended_genres = list(genre_scores_raw.keys())[:4]
+
+    mood_key, mood_label = get_mood_profile(dimensions)
+
+    profile = {
+        "dimensions": dimensions,
+        "top_traits": top_traits,
+        "recommended_genres": recommended_genres,
+        "genre_scores_raw": genre_scores_raw,
+        "mood_profile_key": mood_key,
+        "mood_profile_label": mood_label,
+        "discovery_level": get_discovery_level(dimensions),
+        "intensity_level": get_intensity_level(dimensions),
+        "social_style": get_social_style(dimensions)
+    }
+
+    return profile
+
+
+def serialize_profile(profile):
+    return {
+        "top_traits": profile["top_traits"],
+        "recommended_genres": profile["recommended_genres"],
+        "mood_profile_label": profile["mood_profile_label"],
+        "discovery_level": profile["discovery_level"],
+        "intensity_level": profile["intensity_level"],
+        "social_style": profile["social_style"],
+        "dimensions": profile["dimensions"]
+    }
+
+
+def enrich_match_percentages(items):
+    if not items:
+        return items
+
+    max_score = max(item.get("score", 0) for item in items) or 1
+
+    for item in items:
+        raw_score = item.get("score", 0)
+        item["match_percentage"] = round((raw_score / max_score) * 100)
+
+    return items
