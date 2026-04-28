@@ -716,3 +716,171 @@ def parse_app_page(value, default=1):
     except (TypeError, ValueError):
         return default
     return page if page >= 1 else default
+# =========================
+# TMDB FETCHERS
+# =========================
+def discover_items(selected_genre, selected_language, selected_duration, content_type, tmdb_pages):
+    genre_map = get_genre_map(content_type)
+    genre_id = genre_map.get(selected_genre)
+    language_code = LANGUAGE_MAP.get(selected_language)
+    runtime_range = DURATION_MAP.get(selected_duration)
+
+    endpoint = get_discover_endpoint(content_type)
+
+    all_items = []
+    seen_ids = set()
+    max_available_page = 0
+
+    for page in tmdb_pages:
+        # Note: TMDB returns results sorted by popularity. We still re-sort
+        # locally by our own score after formatting.
+        params = {
+            "language": "en-US",
+            "include_adult": "false",
+            "sort_by": "popularity.desc",
+            "page": page,
+            "vote_count.gte": 200
+        }
+
+        if content_type == "movie":
+            params["include_video"] = "false"
+
+        if genre_id:
+            params["with_genres"] = genre_id
+
+        if language_code:
+            params["with_original_language"] = language_code
+
+        # Runtime filter only exists for movies on TMDB discover.
+        if content_type == "movie" and runtime_range:
+            params["with_runtime.gte"] = runtime_range[0]
+            params["with_runtime.lte"] = runtime_range[1]
+
+        response = requests.get(
+            endpoint,
+            headers=get_tmdb_headers(),
+            params=params,
+            timeout=20
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        max_available_page = max(max_available_page, data.get("total_pages", 0))
+
+        for item in data.get("results", []):
+            item_id = item.get("id")
+            if item_id and item_id not in seen_ids:
+                seen_ids.add(item_id)
+                all_items.append(item)
+
+    return all_items, max_available_page
+
+
+def discover_items_by_personality(profile, content_type, app_page):
+    genre_map = get_genre_map(content_type)
+    endpoint = get_discover_endpoint(content_type)
+
+    all_items = []
+    seen_ids = set()
+    any_has_more = False
+
+    for genre_name in profile["recommended_genres"][:3]:
+        genre_id = genre_map.get(genre_name)
+        if not genre_id:
+            continue
+
+        params = {
+            "language": "en-US",
+            "include_adult": "false",
+            "sort_by": "popularity.desc",
+            "page": app_page,
+            "vote_count.gte": 200,
+            "with_genres": genre_id
+        }
+
+        if content_type == "movie":
+            params["include_video"] = "false"
+
+        response = requests.get(
+            endpoint,
+            headers=get_tmdb_headers(),
+            params=params,
+            timeout=20
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        total_pages = data.get("total_pages", 0)
+
+        if total_pages > app_page:
+            any_has_more = True
+
+        for item in data.get("results", []):
+            item_id = item.get("id")
+            if item_id and item_id not in seen_ids:
+                seen_ids.add(item_id)
+                all_items.append(item)
+
+    return all_items, any_has_more
+
+
+def pick_trailer_video(videos):
+    youtube_candidates = [
+        video for video in videos
+        if video.get("site") == "YouTube" and video.get("key")
+    ]
+
+    if not youtube_candidates:
+        return {}
+
+    youtube_candidates.sort(
+        key=lambda video: (
+            0 if video.get("type") == "Trailer" else 1,
+            0 if video.get("official") else 1,
+            -(video.get("size") or 0)
+        )
+    )
+
+    trailer = youtube_candidates[0]
+    trailer_key = trailer.get("key")
+
+    return {
+        "trailer_name": trailer.get("name"),
+        "trailer_url": f"https://www.youtube.com/watch?v={trailer_key}",
+        "trailer_embed_url": f"https://www.youtube.com/embed/{trailer_key}?rel=0"
+    }
+
+
+def get_media_details(item_id, content_type):
+    if not item_id:
+        return {}
+
+    cache_key = f"{content_type}-{item_id}"
+    if cache_key in MEDIA_DETAILS_CACHE:
+        return MEDIA_DETAILS_CACHE[cache_key]
+
+    try:
+        response = requests.get(
+            f"{TMDB_BASE_URL}/{content_type}/{item_id}",
+            headers=get_tmdb_headers(),
+            params={
+                "language": "en-US",
+                "append_to_response": "videos"
+            },
+            timeout=20
+        )
+        response.raise_for_status()
+        data = response.json()
+        details = pick_trailer_video(data.get("videos", {}).get("results", []))
+
+        if content_type == "movie":
+            details["runtime_minutes"] = data.get("runtime")
+
+        if content_type == "tv":
+            details["number_of_seasons"] = data.get("number_of_seasons")
+            details["number_of_episodes"] = data.get("number_of_episodes")
+    except requests.exceptions.RequestException:
+        details = {}
+
+    MEDIA_DETAILS_CACHE[cache_key] = details
+    return details
