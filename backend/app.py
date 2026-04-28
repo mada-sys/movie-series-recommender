@@ -1299,3 +1299,140 @@ def reset_personality_test(user_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+# =========================
+# RECOMMENDATION ROUTES
+# =========================
+@app.route("/recommend", methods=["POST"])
+def recommend():
+    try:
+        if "PASTE_YOUR_NEW_TMDB_TOKEN_HERE" in TMDB_BEARER_TOKEN:
+            return jsonify({
+                "error": "TMDB token is missing. Paste your TMDB Read Access Token in backend/app.py."
+            }), 500
+
+        data = request.get_json(silent=True) or {}
+
+        selected_genre = data.get("genre")
+        selected_mood = data.get("mood")
+        selected_duration = data.get("duration")
+        selected_language = data.get("language")
+        content_type = normalize_content_type(data.get("content_type"))
+        app_page = parse_app_page(data.get("page"), default=1)
+
+        # For TV we don't require duration since TMDB can't filter by it.
+        required_fields_ok = bool(selected_genre and selected_mood and selected_language)
+        if content_type == "movie":
+            required_fields_ok = required_fields_ok and bool(selected_duration)
+
+        if not required_fields_ok:
+            return jsonify({"error": "Missing required fields."}), 400
+
+        if selected_duration and selected_duration not in DURATION_MAP:
+            return jsonify({"error": "Invalid duration value."}), 400
+
+        tmdb_pages = get_tmdb_pages_for_app_page(app_page)
+
+        items, max_available_page = discover_items(
+            selected_genre=selected_genre,
+            selected_language=selected_language,
+            selected_duration=selected_duration,
+            content_type=content_type,
+            tmdb_pages=tmdb_pages
+        )
+
+        scored_items = []
+
+        for item in items:
+            score, reasons = score_item(
+                item=item,
+                selected_genre=selected_genre,
+                selected_mood=selected_mood,
+                selected_duration=selected_duration,
+                selected_language=selected_language,
+                content_type=content_type
+            )
+            scored_items.append(format_item(item, score, reasons, content_type))
+
+        sort_scored_items(scored_items)
+
+        top_items = scored_items[:ITEMS_PER_PAGE]
+        enrich_match_percentages(top_items)
+        enrich_media_details(top_items)
+
+        has_more = max(tmdb_pages) < max_available_page
+
+        return jsonify({
+            "page": app_page,
+            "content_type": content_type,
+            "recommendations": top_items,
+            "has_more": has_more
+        }), 200
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"TMDb request failed: {str(e)}"}), 502
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/recommend/personality/<int:user_id>", methods=["GET"])
+def recommend_by_personality(user_id):
+    try:
+        if "PASTE_YOUR_NEW_TMDB_TOKEN_HERE" in TMDB_BEARER_TOKEN:
+            return jsonify({
+                "error": "TMDB token is missing. Paste your TMDB Read Access Token in backend/app.py."
+            }), 500
+
+        if not user_exists(user_id):
+            return jsonify({"error": "User not found."}), 404
+
+        row = get_personality_test_row(user_id)
+
+        if row is None:
+            return jsonify({"error": "This user has not completed the personality test yet."}), 400
+
+        content_type = normalize_content_type(request.args.get("content_type"))
+        app_page = parse_app_page(request.args.get("page"), default=1)
+
+        answers = row_to_answers(row)
+        profile = build_personality_profile(answers)
+        profile_payload = serialize_profile(profile)
+
+        items, has_more = discover_items_by_personality(profile, content_type, app_page)
+
+        if not items:
+            return jsonify({
+                "profile": profile_payload,
+                "page": app_page,
+                "content_type": content_type,
+                "recommendations": [],
+                "has_more": False
+            }), 200
+
+        scored_items = []
+
+        for item in items:
+            score, reasons = score_item_by_personality(item, profile, content_type)
+            scored_items.append(format_item(item, score, reasons, content_type))
+
+        sort_scored_items(scored_items)
+
+        top_items = scored_items[:ITEMS_PER_PAGE]
+        enrich_match_percentages(top_items)
+        enrich_media_details(top_items)
+
+        return jsonify({
+            "profile": profile_payload,
+            "page": app_page,
+            "content_type": content_type,
+            "recommendations": top_items,
+            "has_more": has_more
+        }), 200
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"TMDb request failed: {str(e)}"}), 502
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
