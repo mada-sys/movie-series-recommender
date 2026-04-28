@@ -417,3 +417,105 @@ useEffect(() => {
       setManualLoadingMore(false);
     }
   };
+
+ const handleManualSubmit = async (e) => {
+    e.preventDefault();
+
+    setDashboardTab("manual");
+
+    const query = {
+      ...formData,
+      content_type: contentType
+    };
+
+    setLastManualQuery(query);
+    await fetchManualRecommendations(query, 1, false);
+  };
+
+  const handleManualLoadMore = async () => {
+    if (!lastManualQuery || !manualHasMore || manualLoadingMore) return;
+    await fetchManualRecommendations(lastManualQuery, manualPage + 1, true);
+  };
+
+  const handleLoginChange = (e) => {
+    setLoginData({
+      ...loginData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleRegisterChange = (e) => {
+    setRegisterData({
+      ...registerData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(loginData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed.");
+      }
+
+      persistUser(data.user);
+      setDashboardTab("home");
+      navigate(data.user.has_personality_test ? "/dashboard" : "/personality-test");
+    } catch (err) {
+      setAuthError(err.message || "Login failed.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(registerData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Register failed.");
+      }
+
+      setLoginData({
+        email: registerData.email,
+        password: ""
+      });
+
+      setRegisterData({
+        username: "",
+        email: "",
+        password: ""
+      });
+
+      navigate("/login");
+    } catch (err) {
+      setAuthError(err.message || "Register failed.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
