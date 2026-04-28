@@ -618,3 +618,102 @@ useEffect(() => {
       setPersonalityLoadingMore(false);
     }
   };
+
+const handleGetPersonalityRecommendations = async () => {
+    setDashboardTab("personality");
+    await fetchPersonalityRecommendations(1, false);
+  };
+
+  const handlePersonalityLoadMore = async () => {
+    if (!personalityHasMore || personalityLoadingMore) return;
+    await fetchPersonalityRecommendations(personalityPage + 1, true);
+  };
+
+  const handleRetakeTest = () => {
+    setPersonalitySuccess("");
+    setPersonalityError("");
+    navigate("/personality-test");
+  };
+
+  const answeredCount = Object.values(personalityAnswers).filter(Boolean).length;
+  const contentTypeLabel = contentType === "tv" ? "TV series" : "movies";
+  const contentTypeSingular = contentType === "tv" ? "TV series" : "movie";
+
+  const actionBtnStyle = (active = false) => ({
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: active ? "1px solid #111827" : "1px solid #cbd5e1",
+    background: active ? "#111827" : "#ffffff",
+    color: active ? "#ffffff" : "#111827",
+    cursor: "pointer",
+    fontWeight: 600,
+    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)"
+  });
+
+  const secondaryBtnStyle = {
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid #cbd5e1",
+    background: "#f8fafc",
+    color: "#111827",
+    cursor: "pointer",
+    fontWeight: 600,
+    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)"
+  };
+
+  const loadMoreBtnStyle = (disabled = false) => ({
+    padding: "14px 28px",
+    borderRadius: "14px",
+    border: "1px solid #111827",
+    background: disabled ? "#e5e7eb" : "#111827",
+    color: disabled ? "#6b7280" : "#ffffff",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontWeight: 600,
+    fontSize: "15px",
+    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)"
+  });
+
+  const toggleBtnStyle = (active = false) => ({
+    padding: "10px 20px",
+    borderRadius: "999px",
+    border: active ? "1px solid #2563eb" : "1px solid #cbd5e1",
+    background: active ? "#2563eb" : "#ffffff",
+    color: active ? "#ffffff" : "#111827",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "14px",
+    boxShadow: active
+      ? "0 4px 12px rgba(37, 99, 235, 0.25)"
+      : "0 2px 6px rgba(15, 23, 42, 0.06)"
+  });
+
+  const infoCardStyle = {
+    background: "#ffffff",
+    borderRadius: "16px",
+    padding: "16px",
+    border: "1px solid #e5e7eb",
+    color: "#111827",
+    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.06)"
+  };
+
+  const pillStyle = {
+    padding: "10px 14px",
+    borderRadius: "999px",
+    background: "#f8fafc",
+    border: "1px solid #d1d5db",
+    color: "#111827",
+    fontWeight: 500
+  };
+
+  const watchedBtnStyle = (active = false) => ({
+    border: "none",
+    borderRadius: "999px",
+    padding: "10px 16px",
+    fontSize: "0.9rem",
+    fontWeight: 700,
+    cursor: "pointer",
+    background: active ? "#16a34a" : "rgba(255,255,255,0.96)",
+    color: active ? "#ffffff" : "#7c4a35",
+    boxShadow: "0 8px 18px rgba(0,0,0,0.14)",
+    whiteSpace: "nowrap"
+  });
