@@ -519,3 +519,102 @@ useEffect(() => {
       setAuthLoading(false);
     }
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    setDashboardTab("home");
+    setContentType("movie");
+    resetAllRecommendations();
+    setPersonalityProfile(null);
+    setPersonalityAnswers(createEmptyAnswers());
+    navigate("/login");
+  };
+
+  const handlePersonalityAnswerChange = (questionId, optionKey) => {
+    setPersonalityAnswers((prev) => ({
+      ...prev,
+      [questionId]: optionKey
+    }));
+  };
+
+  const handlePersonalitySubmit = async (e) => {
+    e.preventDefault();
+    if (!user?.id) return;
+
+    setPersonalitySubmitLoading(true);
+    setPersonalityError("");
+    setPersonalitySuccess("");
+
+    try {
+      const response = await fetch(`${API_BASE}/personality-test`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          answers: personalityAnswers
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not save personality test.");
+      }
+
+      setPersonalityProfile(data.profile || null);
+      setPersonalitySuccess("Your personality test was saved successfully.");
+      updateUser({ has_personality_test: true });
+      setDashboardTab("personality");
+      navigate("/dashboard");
+    } catch (err) {
+      setPersonalityError(err.message || "Could not save personality test.");
+    } finally {
+      setPersonalitySubmitLoading(false);
+    }
+  };
+
+  const fetchPersonalityRecommendations = async (pageNumber, append) => {
+    if (!user?.id) return;
+
+    if (append) {
+      setPersonalityLoadingMore(true);
+    } else {
+      setPersonalityRecommendationsLoading(true);
+      setPersonalityRecommendations([]);
+    }
+    setPersonalityRecommendationsError("");
+
+    try {
+      const url = `${API_BASE}/recommend/personality/${user.id}?page=${pageNumber}&content_type=${contentType}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not load personality recommendations.");
+      }
+
+      if (data.profile) {
+        setPersonalityProfile(data.profile);
+      }
+
+      const newItems = data.recommendations || [];
+
+      setPersonalityRecommendations((prev) => (append ? [...prev, ...newItems] : newItems));
+      setPersonalityPage(pageNumber);
+      setPersonalityHasMore(Boolean(data.has_more));
+    } catch (err) {
+      setPersonalityRecommendationsError(
+        err.message || "Could not load personality recommendations."
+      );
+      if (!append) {
+        setPersonalityRecommendations([]);
+        setPersonalityHasMore(false);
+      }
+    } finally {
+      setPersonalityRecommendationsLoading(false);
+      setPersonalityLoadingMore(false);
+    }
+  };
