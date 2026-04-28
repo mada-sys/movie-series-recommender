@@ -95,3 +95,248 @@ MOOD_PROFILE_REASONS = {
     "imaginative_and_exploratory": "fits your imaginative / exploratory personality profile",
     "light_and_feel_good": "fits your light / feel-good personality profile"
 }
+PERSONALITY_QUESTIONS = [
+    {
+        "id": "q1",
+        "question": "How do you prefer to spend an ideal weekend?",
+        "options": {
+            "A": "At home, quietly, with time for myself",
+            "B": "With a few close friends",
+            "C": "Going out and exploring new places",
+            "D": "At a big event with lots of energy"
+        }
+    },
+    {
+        "id": "q2",
+        "question": "When an unexpected problem appears, how do you usually react?",
+        "options": {
+            "A": "I analyze it calmly before doing anything",
+            "B": "I ask for a second opinion",
+            "C": "I act quickly in the moment",
+            "D": "I step back and process it alone"
+        }
+    },
+    {
+        "id": "q3",
+        "question": "What attracts you the most in a story?",
+        "options": {
+            "A": "The emotions of the characters",
+            "B": "Its logic and structure",
+            "C": "Suspense and plot twists",
+            "D": "Atmosphere and visual style"
+        }
+    },
+    {
+        "id": "q4",
+        "question": "How often do you actively seek new experiences?",
+        "options": {
+            "A": "Rarely, I prefer what I already know",
+            "B": "Sometimes, if it looks interesting",
+            "C": "Often, I like variety",
+            "D": "Very often, I get bored quickly"
+        }
+    },
+    {
+        "id": "q5",
+        "question": "Which atmosphere represents you best?",
+        "options": {
+            "A": "Cozy, warm, comfortable",
+            "B": "Melancholic and deep",
+            "C": "Energetic and dynamic",
+            "D": "Mysterious and slightly dark"
+        }
+    },
+    {
+        "id": "q6",
+        "question": "In relationships with others, you consider yourself more:",
+        "options": {
+            "A": "Reserved and observant",
+            "B": "Empathetic and emotionally close",
+            "C": "Direct and decisive",
+            "D": "Sociable and expressive"
+        }
+    },
+    {
+        "id": "q7",
+        "question": "When choosing something for relaxation, you prefer:",
+        "options": {
+            "A": "Something calm and predictable",
+            "B": "Something emotional and memorable",
+            "C": "Something fast-paced and gripping",
+            "D": "Something strange, different, unusual"
+        }
+    },
+    {
+        "id": "q8",
+        "question": "How comfortable are you with ambiguous endings?",
+        "options": {
+            "A": "Not at all, I want clear conclusions",
+            "B": "A little, if the rest is good",
+            "C": "Quite comfortable",
+            "D": "Very comfortable, I even enjoy them"
+        }
+    },
+    {
+        "id": "q9",
+        "question": "What matters most to you in a great experience?",
+        "options": {
+            "A": "It makes me feel something deeply",
+            "B": "It keeps me on edge",
+            "C": "It makes me think",
+            "D": "It puts me in a good mood"
+        }
+    },
+    {
+        "id": "q10",
+        "question": "How would you describe yourself best?",
+        "options": {
+            "A": "Calm and balanced",
+            "B": "Sensitive and introspective",
+            "C": "Curious and imaginative",
+            "D": "Energetic and impulsive"
+        }
+    },
+    {
+        "id": "q11",
+        "question": "How much do you enjoy intense experiences?",
+        "options": {
+            "A": "Very little",
+            "B": "Moderately",
+            "C": "A lot",
+            "D": "Very much"
+        }
+    },
+    {
+        "id": "q12",
+        "question": "What kind of world attracts you more?",
+        "options": {
+            "A": "A realistic one, close to everyday life",
+            "B": "A romantic or idealized one",
+            "C": "A tense, hard, unpredictable one",
+            "D": "A fantastic, futuristic or unusual one"
+        }
+    },
+    {
+        "id": "q13",
+        "question": "If something stays with you for a long time, it is usually because:",
+        "options": {
+            "A": "It moved me deeply",
+            "B": "It surprised me intellectually",
+            "C": "It shocked or intensely stressed me",
+            "D": "It inspired me or gave me a special feeling"
+        }
+    },
+    {
+        "id": "q14",
+        "question": "You prefer experiences that:",
+        "options": {
+            "A": "Confirm your tastes and comfort zone",
+            "B": "Stay near your taste, with small surprises",
+            "C": "Sometimes push you out of your comfort zone",
+            "D": "Surprise you completely"
+        }
+    },
+    {
+        "id": "q15",
+        "question": "If you had to choose one direction that represents you right now, it would be:",
+        "options": {
+            "A": "Emotional connection",
+            "B": "Adrenaline and intensity",
+            "C": "Introspection and depth",
+            "D": "Escape and imagination"
+        }
+    }
+]
+
+PERSONALITY_DIMENSION_RULES = {
+    "q1": {
+        "A": {"comfort": 2, "introspection": 2},
+        "B": {"social": 2, "emotion": 1, "comfort": 1},
+        "C": {"curiosity": 2, "adventure": 2, "energy": 1},
+        "D": {"social": 2, "energy": 2, "intensity": 1}
+    },
+    "q2": {
+        "A": {"logic": 2, "comfort": 1},
+        "B": {"social": 2, "emotion": 1},
+        "C": {"energy": 2, "intensity": 2},
+        "D": {"introspection": 2, "logic": 1}
+    },
+    "q3": {
+        "A": {"emotion": 2, "introspection": 1},
+        "B": {"logic": 2, "realism": 1},
+        "C": {"suspense": 2, "intensity": 1},
+        "D": {"imagination": 2, "darkness": 1}
+    },
+    "q4": {
+        "A": {"comfort": 2},
+        "B": {"curiosity": 1},
+        "C": {"curiosity": 2, "adventure": 1},
+        "D": {"curiosity": 3, "adventure": 2}
+    },
+    "q5": {
+        "A": {"comfort": 2},
+        "B": {"emotion": 2, "introspection": 1},
+        "C": {"energy": 2, "intensity": 1},
+        "D": {"darkness": 2, "ambiguity": 1}
+    },
+    "q6": {
+        "A": {"introspection": 2},
+        "B": {"emotion": 2, "social": 1},
+        "C": {"intensity": 1, "logic": 1, "energy": 1},
+        "D": {"social": 2, "energy": 1}
+    },
+    "q7": {
+        "A": {"comfort": 2},
+        "B": {"emotion": 2},
+        "C": {"intensity": 2, "suspense": 1},
+        "D": {"curiosity": 2, "imagination": 1, "ambiguity": 1}
+    },
+    "q8": {
+        "A": {"comfort": 2, "realism": 1},
+        "B": {"ambiguity": 1},
+        "C": {"ambiguity": 2},
+        "D": {"ambiguity": 3, "curiosity": 1}
+    },
+    "q9": {
+        "A": {"emotion": 2},
+        "B": {"intensity": 2, "suspense": 1},
+        "C": {"logic": 1, "introspection": 2},
+        "D": {"comfort": 1, "social": 1}
+    },
+    "q10": {
+        "A": {"comfort": 2, "logic": 1},
+        "B": {"emotion": 2, "introspection": 2},
+        "C": {"curiosity": 2, "imagination": 2},
+        "D": {"energy": 2, "intensity": 2}
+    },
+    "q11": {
+        "A": {"comfort": 2},
+        "B": {"intensity": 1},
+        "C": {"intensity": 2, "energy": 1},
+        "D": {"intensity": 3, "darkness": 1}
+    },
+    "q12": {
+        "A": {"realism": 2},
+        "B": {"emotion": 2, "comfort": 1},
+        "C": {"darkness": 2, "intensity": 1, "realism": 1},
+        "D": {"imagination": 3, "curiosity": 1}
+    },
+    "q13": {
+        "A": {"emotion": 2},
+        "B": {"logic": 2, "ambiguity": 1},
+        "C": {"intensity": 2, "darkness": 2},
+        "D": {"imagination": 1, "introspection": 1, "emotion": 1}
+    },
+    "q14": {
+        "A": {"comfort": 2},
+        "B": {"comfort": 1, "curiosity": 1},
+        "C": {"curiosity": 2},
+        "D": {"curiosity": 3, "ambiguity": 1, "adventure": 1}
+    },
+    "q15": {
+        "A": {"emotion": 2, "social": 1},
+        "B": {"intensity": 2, "energy": 1},
+        "C": {"introspection": 2, "logic": 1},
+        "D": {"imagination": 2, "adventure": 1}
+    }
+}
