@@ -841,3 +841,201 @@ const handleGetPersonalityRecommendations = async () => {
       </div>
     );
   };
+
+
+  const renderContentTypeToggle = () => (
+    <div
+      style={{
+        display: "flex",
+        gap: "10px",
+        flexWrap: "wrap",
+        alignItems: "center",
+        marginTop: "14px"
+      }}
+    >
+      <span style={{ fontWeight: 600, color: "#111827", marginRight: "4px" }}>
+        I want to watch:
+      </span>
+      <button
+        type="button"
+        onClick={() => handleContentTypeChange("movie")}
+        style={toggleBtnStyle(contentType === "movie")}
+      >
+        🎬 Movies
+      </button>
+      <button
+        type="button"
+        onClick={() => handleContentTypeChange("tv")}
+        style={toggleBtnStyle(contentType === "tv")}
+      >
+        📺 TV Series
+      </button>
+    </div>
+  );
+
+  const renderMovieGrid = ({
+    items,
+    isLoading,
+    currentError,
+    emptyText,
+    onLoadMore,
+    hasMoreItems,
+    isLoadingMore
+  }) => (
+    <section className="results-section">
+      <div className="section-heading">
+        <h2>Recommended {contentTypeLabel}</h2>
+        <p>Your best matches appear below.</p>
+      </div>
+
+      {currentError && <div className="app-error">{currentError}</div>}
+
+      {isLoading && (
+        <div className="loading-card">
+          <div className="loader-ring"></div>
+          <p>Finding the best {contentTypeLabel} for you...</p>
+        </div>
+      )}
+
+      {!isLoading && items.length === 0 && !currentError && (
+        <div className="empty-card">
+          <div className="empty-emoji">{contentType === "tv" ? "📺" : "🎞️"}</div>
+          <p>{emptyText}</p>
+        </div>
+      )}
+
+      <div className="movies-grid">
+        {items.map((movie, index) => {
+          const watched = isMovieWatched(movie);
+          const mediaLengthLabel = getMediaLengthLabel(movie);
+
+          return (
+            <div
+              key={`${movie.content_type || "movie"}-${movie.id}`}
+              className="movie-card"
+              style={{ animationDelay: `${(index % 10) * 0.12}s` }}
+            >
+              <div
+                className="movie-poster-wrap"
+                style={{
+                  position: "relative",
+                  overflow: "hidden",
+                  borderTopLeftRadius: "inherit",
+                  borderTopRightRadius: "inherit"
+                }}
+              >
+                {movie.poster_url ? (
+                  <>
+                    <img
+                      src={movie.poster_url}
+                      alt={movie.title}
+                      className="movie-poster"
+                      style={{
+                        filter: watched ? "blur(3px) brightness(0.7)" : "none",
+                        transition: "0.3s ease"
+                      }}
+                    />
+
+                    {watched && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background: "rgba(0,0,0,0.25)"
+                        }}
+                      />
+                    )}
+
+                    {watched && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          color: "#ffffff",
+                          fontWeight: 800,
+                          fontSize: "18px",
+                          background: "rgba(0,0,0,0.6)",
+                          padding: "8px 14px",
+                          borderRadius: "999px",
+                          zIndex: 2,
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        ✓ WATCHED
+                      </div>
+                    )}
+
+                    <div className="movie-overlay-actions">
+                      <div className="movie-score-badge">
+                        {movie.match_percentage
+                          ? `${movie.match_percentage}%`
+                          : `${movie.score} pts`}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleWatched(movie)}
+                        style={watchedBtnStyle(watched)}
+                      >
+                        {watched ? "✓ WATCHED" : "WATCH"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="movie-no-image">No image</div>
+                )}
+              </div>
+
+              <div className="movie-content">
+                <h3>{movie.title}</h3>
+
+                <div className="movie-meta">
+                  <span>{movie.release_date || "Unknown date"}</span>
+                  <span>
+                    ⭐ {movie.vote_average ? movie.vote_average.toFixed(1) : "N/A"}
+                  </span>
+                  <span>{movie.original_language?.toUpperCase() || "N/A"}</span>
+                  {mediaLengthLabel && <span>{mediaLengthLabel}</span>}
+                </div>
+
+                <p className="movie-overview">{movie.overview}</p>
+                {renderTrailerSection(movie)}
+
+                {movie.why_recommended && movie.why_recommended.length > 0 && (
+                  <div className="why-box">
+                    <strong>Why recommended</strong>
+                    <ul>
+                      {movie.why_recommended.map((reason, reasonIndex) => (
+                        <li key={reasonIndex}>{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {!isLoading && items.length > 0 && hasMoreItems && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "26px"
+          }}
+        >
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            style={loadMoreBtnStyle(isLoadingMore)}
+          >
+            {isLoadingMore ? "Loading more..." : `Load 10 more ${contentTypeLabel}`}
+          </button>
+        </div>
+      )}
+    </section>
+  );
