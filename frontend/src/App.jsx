@@ -1263,3 +1263,210 @@ const renderProfileCard = () => {
       </div>
     );
   }
+
+
+  if (route === "/personality-test") {
+    return (
+      <div className="app-page">
+        <div className="bg-shape shape-1"></div>
+        <div className="bg-shape shape-2"></div>
+        <div className="bg-shape shape-3"></div>
+
+        <div className="app-container">
+          <div className="topbar">
+            <div>
+              <div className="topbar-badge">Personality onboarding</div>
+              <h1>15-question personality test</h1>
+              <p>
+                Complete this test once, save it to your account, and use it anytime for
+                automatic recommendations.
+              </p>
+            </div>
+
+            <div className="topbar-right">
+              <div className="welcome-box">
+                Welcome, <strong>{user?.username || "User"}</strong>
+              </div>
+
+              {user?.has_personality_test && (
+                <button onClick={() => navigate("/dashboard")} className="logout-btn">
+                  Back to dashboard
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div
+            className="glass-panel"
+            style={{
+              padding: "24px",
+              borderRadius: "22px",
+              marginBottom: "26px"
+            }}
+          >
+            <div className="section-heading">
+              <h2>Your progress</h2>
+              <p>{answeredCount} / 15 answers completed.</p>
+            </div>
+
+            <div
+              style={{
+                width: "100%",
+                height: "10px",
+                background: "#e5e7eb",
+                borderRadius: "999px",
+                overflow: "hidden",
+                marginTop: "12px"
+              }}
+            >
+              <div
+                style={{
+                  width: `${(answeredCount / 15) * 100}%`,
+                  height: "100%",
+                  background: "linear-gradient(90deg, #2563eb, #7c3aed)"
+                }}
+              ></div>
+            </div>
+
+            {personalitySuccess && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  background: "#dcfce7",
+                  color: "#166534",
+                  border: "1px solid #86efac"
+                }}
+              >
+                {personalitySuccess}
+              </div>
+            )}
+
+            {personalityError && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  background: "#fee2e2",
+                  color: "#991b1b",
+                  border: "1px solid #fca5a5"
+                }}
+              >
+                {personalityError}
+              </div>
+            )}
+          </div>
+
+          <form onSubmit={handlePersonalitySubmit}>
+            {personalityLoading ? (
+              <div className="loading-card">
+                <div className="loader-ring"></div>
+                <p>Loading your personality test...</p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gap: "18px"
+                }}
+              >
+                {personalityQuestions.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="glass-panel"
+                    style={{
+                      padding: "22px",
+                      borderRadius: "22px"
+                    }}
+                  >
+                    <div className="section-heading">
+                      <h2 style={{ fontSize: "20px", marginBottom: "6px", color: "#111827" }}>
+                        {index + 1}. {item.question}
+                      </h2>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "10px",
+                        marginTop: "12px"
+                      }}
+                    >
+                      {Object.entries(item.options).map(([key, label]) => {
+                        const isSelected = personalityAnswers[item.id] === key;
+
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => handlePersonalityAnswerChange(item.id, key)}
+                            style={{
+                              padding: "14px 16px",
+                              borderRadius: "14px",
+                              border: isSelected
+                                ? "1px solid #2563eb"
+                                : "1px solid #cbd5e1",
+                              background: isSelected ? "#dbeafe" : "#ffffff",
+                              color: "#111827",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              fontSize: "15px",
+                              fontWeight: isSelected ? 600 : 500,
+                              boxShadow: "0 4px 12px rgba(15, 23, 42, 0.06)"
+                            }}
+                          >
+                            <strong style={{ marginRight: "8px", color: "#1d4ed8" }}>
+                              {key}.
+                            </strong>
+                            <span style={{ color: "#111827" }}>{label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                    justifyContent: "flex-end",
+                    marginTop: "6px"
+                  }}
+                >
+                  {user?.has_personality_test && (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/dashboard")}
+                      style={secondaryBtnStyle}
+                    >
+                      Cancel
+                    </button>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="recommend-btn"
+                    style={{
+                      background: "#111827",
+                      color: "#ffffff",
+                      border: "none"
+                    }}
+                  >
+                    {personalitySubmitLoading
+                      ? "Saving test..."
+                      : user?.has_personality_test
+                      ? "Update personality test"
+                      : "Save personality test"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+      </div>
+    );
+  }
