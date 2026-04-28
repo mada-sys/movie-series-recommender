@@ -235,3 +235,78 @@ const toggleWatched = (movie) => {
 
     syncStatus();
   }, [user?.id]);
+
+useEffect(() => {
+    if (!user?.id) return;
+
+    if (route === "/personality-test") {
+      fetchPersonalityQuestions();
+      fetchPersonalityData(user.id);
+    }
+
+    if (route === "/dashboard" && user.has_personality_test) {
+      fetchPersonalityData(user.id);
+    }
+  }, [route, user?.id, user?.has_personality_test]);
+
+  useEffect(() => {
+    if (route !== "/watched") return;
+
+    const userId = user?.id || "guest";
+    const watchedEntries = Object.entries(watchedItems).filter(
+      ([key, item]) => key.startsWith(`${userId}-`) && item?.id && needsMediaDetails(item)
+    );
+
+    if (watchedEntries.length === 0) return;
+
+    let cancelled = false;
+
+    const syncWatchedMediaDetails = async () => {
+      try {
+        const results = await Promise.all(
+          watchedEntries.map(async ([key, item]) => {
+            const type = item.content_type || "movie";
+            const response = await fetch(`${API_BASE}/media-details/${type}/${item.id}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error || "Could not load media details.");
+            }
+
+            return { key, data };
+          })
+        );
+
+        if (cancelled) return;
+
+        setWatchedItems((prev) => {
+          const next = { ...prev };
+          let changed = false;
+
+          results.forEach(({ key, data }) => {
+            if (!next[key]) return;
+
+            next[key] = {
+              ...next[key],
+              ...data,
+              media_details_loaded: true
+            };
+            changed = true;
+          });
+
+          if (!changed) return prev;
+
+          localStorage.setItem("watchedItems", JSON.stringify(next));
+          return next;
+        });
+      } catch (err) {
+        console.error("Could not sync watched media details.", err);
+      }
+    };
+
+    syncWatchedMediaDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [route, user?.id, watchedItems]);
