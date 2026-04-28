@@ -70,5 +70,3 @@ The application combines:
 - TMDB (The Movie Database)
 
 
-
-ies-recommeder
