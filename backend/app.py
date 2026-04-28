@@ -965,7 +965,76 @@ def score_item_by_personality(item, profile, content_type):
         reasons.append("has a strong rating")
     elif vote_average >= 6.5:
         score += 1
+# =========================
+# FORMATTING
+# =========================
+def format_item(item, score, reasons, content_type):
+    # Normalize TV fields (name / first_air_date) to the same keys movies use,
+    # so the frontend can render both with the same component.
+    if content_type == "tv":
+        title = item.get("name")
+        release_date = item.get("first_air_date")
+    else:
+        title = item.get("title")
+        release_date = item.get("release_date")
 
+    return {
+        "id": item.get("id"),
+        "title": title,
+        "overview": item.get("overview") or "No overview available.",
+        "poster_path": item.get("poster_path"),
+        "poster_url": build_image_url(item.get("poster_path")),
+        "backdrop_url": build_image_url(item.get("backdrop_path")),
+        "release_date": release_date,
+        "vote_average": item.get("vote_average"),
+        "vote_count": item.get("vote_count"),
+        "popularity": item.get("popularity"),
+        "original_language": item.get("original_language"),
+        "genre_ids": item.get("genre_ids", []),
+        "content_type": content_type,
+        "score": score,
+        "why_recommended": reasons
+    }
+
+
+def enrich_media_details(items):
+    for item in items:
+        content_type = item.get("content_type") or "movie"
+        details = get_media_details(item.get("id"), content_type)
+
+        item["trailer_name"] = details.get("trailer_name")
+        item["trailer_url"] = details.get("trailer_url")
+        item["trailer_embed_url"] = details.get("trailer_embed_url")
+        item["runtime_minutes"] = details.get("runtime_minutes")
+        item["media_details_loaded"] = True
+
+        if content_type == "tv":
+            item["number_of_seasons"] = details.get("number_of_seasons")
+            item["number_of_episodes"] = details.get("number_of_episodes")
+
+
+@app.route("/media-details/<content_type>/<int:item_id>", methods=["GET"])
+def media_details_route(content_type, item_id):
+    try:
+        normalized_content_type = normalize_content_type(content_type)
+        details = get_media_details(item_id, normalized_content_type)
+        details["content_type"] = normalized_content_type
+        details["media_details_loaded"] = True
+        return jsonify(details), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def sort_scored_items(items):
+    items.sort(
+        key=lambda m: (
+            m["score"],
+            m["vote_average"] if m["vote_average"] is not None else 0,
+            m["popularity"] if m["popularity"] is not None else 0
+        ),
+        reverse=True
+    )
+    return items
     if popularity >= 100:
         score += 1
         reasons.append("is popular on TMDb")
