@@ -1039,3 +1039,227 @@ const handleGetPersonalityRecommendations = async () => {
       )}
     </section>
   );
+
+const renderProfileCard = () => {
+    if (!personalityProfile) {
+      return (
+        <div className="empty-card">
+          <div className="empty-emoji">🧠</div>
+          <p>No personality profile yet. Complete the test first.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          display: "grid",
+          gap: "16px",
+          marginBottom: "28px"
+        }}
+      >
+        <div
+          className="glass-panel"
+          style={{
+            padding: "22px",
+            borderRadius: "22px"
+          }}
+        >
+          <div className="section-heading">
+            <h2>Your personality profile</h2>
+            <p>This profile is generated from your 15-answer personality test.</p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "14px",
+              marginTop: "10px"
+            }}
+          >
+            <div style={infoCardStyle}>
+              <strong>Mood profile</strong>
+              <p style={{ marginTop: "8px", color: "#111827" }}>
+                {personalityProfile.mood_profile_label || "N/A"}
+              </p>
+            </div>
+
+            <div style={infoCardStyle}>
+              <strong>Discovery level</strong>
+              <p style={{ marginTop: "8px", color: "#111827" }}>
+                {personalityProfile.discovery_level || "N/A"}
+              </p>
+            </div>
+
+            <div style={infoCardStyle}>
+              <strong>Intensity level</strong>
+              <p style={{ marginTop: "8px", color: "#111827" }}>
+                {personalityProfile.intensity_level || "N/A"}
+              </p>
+            </div>
+
+            <div style={infoCardStyle}>
+              <strong>Social style</strong>
+              <p style={{ marginTop: "8px", color: "#111827" }}>
+                {personalityProfile.social_style || "N/A"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="glass-panel"
+          style={{
+            padding: "22px",
+            borderRadius: "22px"
+          }}
+        >
+          <div className="section-heading">
+            <h2>Top traits</h2>
+            <p>The strongest tendencies detected from your answers.</p>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+              marginTop: "10px"
+            }}
+          >
+            {(personalityProfile.top_traits || []).map((trait) => (
+              <div key={trait.key} style={pillStyle}>
+                {trait.label} ({trait.score})
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: "20px" }}>
+            <strong style={{ color: "#111827" }}>Recommended genres</strong>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "10px",
+                marginTop: "10px"
+              }}
+            >
+              {(personalityProfile.recommended_genres || []).map((genre) => (
+                <div key={genre} style={pillStyle}>
+                  {genre}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (route === "/register") {
+    return (
+      <div className="auth-page">
+        <div className="bg-shape shape-1"></div>
+        <div className="bg-shape shape-2"></div>
+        <div className="bg-shape shape-3"></div>
+
+        <div className="auth-card auth-card-register">
+          <div className="auth-badge">Create your account</div>
+          <h2>Join the movie journey</h2>
+          <p className="auth-subtitle">
+            Build your profile and start receiving warm, personalized recommendations.
+          </p>
+
+          <form onSubmit={handleRegisterSubmit} className="auth-form">
+            <input
+              type="text"
+              name="username"
+              placeholder="Username"
+              value={registerData.username}
+              onChange={handleRegisterChange}
+              required
+            />
+
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={registerData.email}
+              onChange={handleRegisterChange}
+              required
+            />
+
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={registerData.password}
+              onChange={handleRegisterChange}
+              required
+            />
+
+            {authError && <div className="auth-error">{authError}</div>}
+
+            <button type="submit" className="auth-btn">
+              {authLoading ? "Registering..." : "Create account"}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            Already have an account?{" "}
+            <span onClick={() => navigate("/login")}>Login</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (route === "/login") {
+    return (
+      <div className="auth-page">
+        <div className="bg-shape shape-1"></div>
+        <div className="bg-shape shape-2"></div>
+        <div className="bg-shape shape-3"></div>
+
+        <div className="auth-card">
+          <div className="auth-badge">Welcome back</div>
+          <h2>Login to continue</h2>
+          <p className="auth-subtitle">
+            Find films that match your personality, mood and cinematic vibe.
+          </p>
+
+          <form onSubmit={handleLoginSubmit} className="auth-form">
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={loginData.email}
+              onChange={handleLoginChange}
+              required
+            />
+
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={loginData.password}
+              onChange={handleLoginChange}
+              required
+            />
+
+            {authError && <div className="auth-error">{authError}</div>}
+
+            <button type="submit" className="auth-btn">
+              {authLoading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            Don’t have an account?{" "}
+            <span onClick={() => navigate("/register")}>Register</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
