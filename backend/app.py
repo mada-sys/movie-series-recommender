@@ -409,3 +409,119 @@ def init_db():
 
 
 init_db()
+# =========================
+# GENERIC HELPERS
+# =========================
+def get_tmdb_headers():
+    return {
+        "Authorization": f"Bearer {TMDB_BEARER_TOKEN}",
+        "accept": "application/json"
+    }
+
+
+def build_image_url(path):
+    if not path:
+        return None
+    return f"{TMDB_IMAGE_BASE_URL}{path}"
+
+
+def normalize_answer(value):
+    if value is None:
+        return None
+    return str(value).strip().upper()
+
+
+def user_exists(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return user is not None
+
+
+def user_has_personality_test(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM personality_tests WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None
+
+
+def get_personality_test_row(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM personality_tests WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def row_to_answers(row):
+    if row is None:
+        return None
+    return {f"q{i}": row[f"q{i}"] for i in range(1, 16)}
+
+
+def extract_answers_from_payload(payload):
+    answers = payload.get("answers")
+
+    if isinstance(answers, dict):
+        return {f"q{i}": normalize_answer(answers.get(f"q{i}")) for i in range(1, 16)}
+
+    return {f"q{i}": normalize_answer(payload.get(f"q{i}")) for i in range(1, 16)}
+
+
+def validate_personality_answers(answers):
+    missing = []
+    invalid = []
+
+    for i in range(1, 16):
+        key = f"q{i}"
+        value = answers.get(key)
+
+        if not value:
+            missing.append(key)
+        elif value not in {"A", "B", "C", "D"}:
+            invalid.append(key)
+
+    return missing, invalid
+
+
+def save_or_update_personality_test(user_id, answers):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM personality_tests WHERE user_id = ?", (user_id,))
+    existing = cursor.fetchone()
+
+    values = [answers[f"q{i}"] for i in range(1, 16)]
+
+    if existing:
+        cursor.execute("""
+            UPDATE personality_tests
+            SET
+                q1 = ?, q2 = ?, q3 = ?, q4 = ?, q5 = ?,
+                q6 = ?, q7 = ?, q8 = ?, q9 = ?, q10 = ?,
+                q11 = ?, q12 = ?, q13 = ?, q14 = ?, q15 = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        """, (*values, user_id))
+    else:
+        cursor.execute("""
+            INSERT INTO personality_tests (
+                user_id, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, *values))
+
+    conn.commit()
+    conn.close()
+
+
+def delete_personality_test(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM personality_tests WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
