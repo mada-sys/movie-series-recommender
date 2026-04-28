@@ -1470,3 +1470,194 @@ const renderProfileCard = () => {
       </div>
     );
   }
+
+if (route === "/watched") {
+    const watchedList = getUserWatchedItems();
+    const watchedMovies = watchedList.filter((item) => (item.content_type || "movie") === "movie");
+    const watchedSeries = watchedList.filter((item) => item.content_type === "tv");
+
+    return (
+      <div className="app-page">
+        <div className="bg-shape shape-1"></div>
+        <div className="bg-shape shape-2"></div>
+        <div className="bg-shape shape-3"></div>
+
+        <div className="app-container">
+          <div className="topbar">
+            <div>
+              <div className="topbar-badge">Your watched library</div>
+              <h1>Watched movies & series</h1>
+              <p>Here you can find everything you marked as watched.</p>
+            </div>
+
+            <div className="topbar-right">
+              <div className="welcome-box">
+                Welcome, <strong>{user?.username || "User"}</strong>
+              </div>
+              <button onClick={() => navigate("/dashboard")} className="logout-btn">
+                Back to dashboard
+              </button>
+            </div>
+          </div>
+
+          <div
+            className="glass-panel"
+            style={{
+              padding: "22px",
+              borderRadius: "22px",
+              marginBottom: "26px"
+            }}
+          >
+            <div className="section-heading">
+              <h2>Your watched collection</h2>
+              <p>
+                Total watched items: <strong>{watchedList.length}</strong>
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                marginTop: "14px"
+              }}
+            >
+              <div style={pillStyle}>🎬 Movies: {watchedMovies.length}</div>
+              <div style={pillStyle}>📺 TV Series: {watchedSeries.length}</div>
+            </div>
+          </div>
+
+          <section className="results-section">
+            <div className="section-heading">
+              <h2>All watched items</h2>
+              <p>You can remove any item by pressing the watched button again.</p>
+            </div>
+
+            {watchedList.length === 0 && (
+              <div className="empty-card">
+                <div className="empty-emoji">🍿</div>
+                <p>You have not marked any movies or TV series as watched yet.</p>
+              </div>
+            )}
+
+            <div className="movies-grid">
+              {watchedList.map((movie, index) => {
+                const watched = isMovieWatched(movie);
+                const mediaLengthLabel = getMediaLengthLabel(movie);
+
+                return (
+                  <div
+                    key={`${movie.content_type || "movie"}-${movie.id}`}
+                    className="movie-card"
+                    style={{ animationDelay: `${(index % 10) * 0.12}s` }}
+                  >
+                    <div
+                      className="movie-poster-wrap"
+                      style={{
+                        position: "relative",
+                        overflow: "hidden",
+                        borderTopLeftRadius: "inherit",
+                        borderTopRightRadius: "inherit"
+                      }}
+                    >
+                      {movie.poster_url ? (
+                        <>
+                          <img
+                            src={movie.poster_url}
+                            alt={movie.title}
+                            className="movie-poster"
+                            style={{
+                              filter: watched ? "blur(3px) brightness(0.7)" : "none",
+                              transition: "0.3s ease"
+                            }}
+                          />
+
+                          {watched && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                background: "rgba(0,0,0,0.25)"
+                              }}
+                            />
+                          )}
+
+                          {watched && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
+                                transform: "translate(-50%, -50%)",
+                                color: "#ffffff",
+                                fontWeight: 800,
+                                fontSize: "18px",
+                                background: "rgba(0,0,0,0.6)",
+                                padding: "8px 14px",
+                                borderRadius: "999px",
+                                zIndex: 2,
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              ✓ WATCHED
+                            </div>
+                          )}
+
+                          <div className="movie-overlay-actions">
+                            <div className="movie-score-badge">
+                              {movie.content_type === "tv" ? "TV Series" : "Movie"}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleWatched(movie)}
+                              style={watchedBtnStyle(watched)}
+                            >
+                              {watched ? "✓ WATCHED" : "WATCH"}
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="movie-no-image">No image</div>
+                      )}
+                    </div>
+
+                    <div className="movie-content">
+                      <h3>{movie.title}</h3>
+
+                      <div className="movie-meta">
+                        <span>{movie.release_date || "Unknown date"}</span>
+                        <span>
+                          ⭐ {movie.vote_average ? movie.vote_average.toFixed(1) : "N/A"}
+                        </span>
+                        <span>{movie.original_language?.toUpperCase() || "N/A"}</span>
+                        {mediaLengthLabel && <span>{mediaLengthLabel}</span>}
+                      </div>
+
+                      <p className="movie-overview">{movie.overview}</p>
+                      {renderWatchedRating(movie)}
+                      {renderTrailerSection(movie)}
+
+                      {movie.saved_at && (
+                        <div
+                          style={{
+                            marginTop: "14px",
+                            fontSize: "0.9rem",
+                            color: "#64748b",
+                            fontWeight: 600
+                          }}
+                        >
+                          Saved as watched: {new Date(movie.saved_at).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
