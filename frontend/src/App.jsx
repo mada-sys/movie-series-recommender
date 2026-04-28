@@ -127,3 +127,111 @@ function App() {
       return next;
     });
   };
+
+const toggleWatched = (movie) => {
+    const key = getWatchedKey(movie);
+
+    setWatchedItems((prev) => {
+      const next = { ...prev };
+
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = {
+          ...movie,
+          content_type: movie.content_type || contentType || "movie",
+          user_rating: Number(movie.user_rating || 5),
+          media_details_loaded: Boolean(movie.media_details_loaded),
+          saved_at: new Date().toISOString()
+        };
+      }
+
+      localStorage.setItem("watchedItems", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const getUserWatchedItems = () => {
+    const userId = user?.id || "guest";
+
+    return Object.entries(watchedItems)
+      .filter(([key]) => key.startsWith(`${userId}-`))
+      .map(([, value]) => value)
+      .sort((a, b) => new Date(b.saved_at || 0) - new Date(a.saved_at || 0));
+  };
+
+  const handleWatchedRatingChange = (movie, nextRating) => {
+    updateWatchedItem(movie, { user_rating: Number(nextRating) });
+  };
+
+  const needsMediaDetails = (item) => !item.media_details_loaded;
+
+  const resetAllRecommendations = () => {
+    setManualRecommendations([]);
+    setManualPage(1);
+    setManualHasMore(false);
+    setManualError("");
+    setLastManualQuery(null);
+
+    setPersonalityRecommendations([]);
+    setPersonalityPage(1);
+    setPersonalityHasMore(false);
+    setPersonalityRecommendationsError("");
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setRoute(window.location.pathname);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    setAuthError("");
+  }, [route]);
+
+  useEffect(() => {
+    const authRoutes = ["/login", "/register"];
+
+    if (!user) {
+      if (!authRoutes.includes(route)) {
+        navigate("/login");
+      }
+      return;
+    }
+
+    if (route === "/" || authRoutes.includes(route)) {
+      navigate(user.has_personality_test ? "/dashboard" : "/personality-test");
+      return;
+    }
+
+    if (route === "/dashboard" && !user.has_personality_test) {
+      navigate("/personality-test");
+    }
+  }, [user, route]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const syncStatus = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/personality-test/status/${user.id}`);
+        const data = await response.json();
+
+        if (!response.ok) return;
+
+        if (data.has_test !== user.has_personality_test) {
+          updateUser({ has_personality_test: data.has_test });
+        }
+      } catch (err) {
+        console.error("Could not sync personality test status.", err);
+      }
+    };
+
+    syncStatus();
+  }, [user?.id]);
