@@ -675,3 +675,44 @@ def enrich_match_percentages(items):
         item["match_percentage"] = round((raw_score / max_score) * 100)
 
     return items
+# =========================
+# CONTENT TYPE HELPERS
+# =========================
+def normalize_content_type(value):
+    if value is None:
+        return "movie"
+    value = str(value).strip().lower()
+    if value in ("tv", "series", "show", "shows"):
+        return "tv"
+    return "movie"
+
+
+def get_genre_map(content_type):
+    if content_type == "tv":
+        return TV_GENRE_MAP
+    return MOVIE_GENRE_MAP
+
+
+def get_mood_bonus_genres(mood, content_type):
+    if content_type == "tv":
+        return TV_MOOD_BONUS_GENRES.get(mood, [])
+    return MOVIE_MOOD_BONUS_GENRES.get(mood, [])
+
+
+def get_discover_endpoint(content_type):
+    if content_type == "tv":
+        return f"{TMDB_BASE_URL}/discover/tv"
+    return f"{TMDB_BASE_URL}/discover/movie"
+
+
+def get_tmdb_pages_for_app_page(app_page, pages_per_batch=TMDB_PAGES_PER_BATCH):
+    start = (app_page - 1) * pages_per_batch + 1
+    return list(range(start, start + pages_per_batch))
+
+
+def parse_app_page(value, default=1):
+    try:
+        page = int(value)
+    except (TypeError, ValueError):
+        return default
+    return page if page >= 1 else default
