@@ -1040,3 +1040,262 @@ def sort_scored_items(items):
         reasons.append("is popular on TMDb")
 
     return round(score, 2), reasons
+# =========================
+# BASIC ROUTES
+# =========================
+@app.route("/")
+def home():
+    return {"message": "Backend running"}
+
+
+@app.route("/tmdb-test", methods=["GET"])
+def tmdb_test():
+    try:
+        if "PASTE_YOUR_NEW_TMDB_TOKEN_HERE" in TMDB_BEARER_TOKEN:
+            return jsonify({"error": "TMDB token is missing."}), 500
+
+        items, _ = discover_items(
+            selected_genre="Action",
+            selected_language="English",
+            selected_duration="Long",
+            content_type="movie",
+            tmdb_pages=[1]
+        )
+        preview = []
+
+        for item in items[:5]:
+            preview.append({
+                "id": item.get("id"),
+                "title": item.get("title"),
+                "poster_url": build_image_url(item.get("poster_path")),
+                "release_date": item.get("release_date"),
+                "vote_average": item.get("vote_average")
+            })
+
+        return jsonify(preview)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# AUTH ROUTES
+# =========================
+@app.route("/register", methods=["POST"])
+def register():
+    try:
+        data = request.get_json(silent=True) or {}
+
+        username = data.get("username", "").strip()
+        email = data.get("email", "").strip().lower()
+        password = data.get("password", "").strip()
+
+        if not username or not email or not password:
+            return jsonify({"error": "All fields are required."}), 400
+
+        if len(password) < 6:
+            return jsonify({"error": "Password must have at least 6 characters."}), 400
+
+        hashed_password = generate_password_hash(password)
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        existing_email = cursor.fetchone()
+
+        if existing_email:
+            conn.close()
+            return jsonify({"error": "An account with this email already exists."}), 400
+
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        existing_username = cursor.fetchone()
+
+        if existing_username:
+            conn.close()
+            return jsonify({"error": "This username is already taken."}), 400
+
+        cursor.execute(
+            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+            (username, email, hashed_password)
+        )
+
+        user_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            "message": "User registered successfully.",
+            "user": {
+                "id": user_id,
+                "username": username,
+                "email": email,
+                "has_personality_test": False
+            }
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/login", methods=["POST"])
+def login():
+    try:
+        data = request.get_json(silent=True) or {}
+
+        email = data.get("email", "").strip().lower()
+        password = data.get("password", "").strip()
+
+        if not email or not password:
+            return jsonify({"error": "Email and password are required."}), 400
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user is None:
+            return jsonify({"error": "Invalid credentials."}), 401
+
+        if not check_password_hash(user["password"], password):
+            return jsonify({"error": "Invalid credentials."}), 401
+
+        has_personality_test = user_has_personality_test(user["id"])
+
+        return jsonify({
+            "message": "Login successful.",
+            "user": {
+                "id": user["id"],
+                "username": user["username"],
+                "email": user["email"],
+                "has_personality_test": has_personality_test
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# PERSONALITY TEST ROUTES
+# =========================
+@app.route("/personality-questions", methods=["GET"])
+def personality_questions():
+    return jsonify(PERSONALITY_QUESTIONS)
+
+
+@app.route("/personality-test/status/<int:user_id>", methods=["GET"])
+def personality_test_status(user_id):
+    try:
+        if not user_exists(user_id):
+            return jsonify({"error": "User not found."}), 404
+
+        row = get_personality_test_row(user_id)
+
+        if row is None:
+            return jsonify({
+                "has_test": False,
+                "completed_at": None,
+                "updated_at": None
+            }), 200
+
+        return jsonify({
+            "has_test": True,
+            "completed_at": row["created_at"],
+            "updated_at": row["updated_at"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/personality-test/<int:user_id>", methods=["GET"])
+def get_personality_test(user_id):
+    try:
+        if not user_exists(user_id):
+            return jsonify({"error": "User not found."}), 404
+
+        row = get_personality_test_row(user_id)
+
+        if row is None:
+            return jsonify({
+                "has_test": False,
+                "answers": None,
+                "profile": None
+            }), 200
+
+        answers = row_to_answers(row)
+        profile = build_personality_profile(answers)
+
+        return jsonify({
+            "has_test": True,
+            "answers": answers,
+            "profile": serialize_profile(profile),
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/personality-test", methods=["POST"])
+def save_personality_test_route():
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get("user_id")
+
+        if not user_id:
+            return jsonify({"error": "user_id is required."}), 400
+
+        if not user_exists(user_id):
+            return jsonify({"error": "User not found."}), 404
+
+        answers = extract_answers_from_payload(data)
+        missing, invalid = validate_personality_answers(answers)
+
+        if missing:
+            return jsonify({
+                "error": "All 15 questions must be answered.",
+                "missing": missing
+            }), 400
+
+        if invalid:
+            return jsonify({
+                "error": "Some answers are invalid. Allowed values are A, B, C, D.",
+                "invalid": invalid
+            }), 400
+
+        save_or_update_personality_test(user_id, answers)
+        profile = build_personality_profile(answers)
+
+        return jsonify({
+            "message": "Personality test saved successfully.",
+            "has_test": True,
+            "profile": serialize_profile(profile)
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/personality-test/<int:user_id>", methods=["DELETE"])
+def reset_personality_test(user_id):
+    try:
+        if not user_exists(user_id):
+            return jsonify({"error": "User not found."}), 404
+
+        if not user_has_personality_test(user_id):
+            return jsonify({"error": "This user has no saved personality test."}), 404
+
+        delete_personality_test(user_id)
+
+        return jsonify({
+            "message": "Personality test deleted successfully.",
+            "has_test": False
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
