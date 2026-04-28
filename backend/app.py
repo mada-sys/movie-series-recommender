@@ -356,3 +356,56 @@ DIMENSION_LABELS = {
     "logic": "analytical",
     "adventure": "adventure-seeking"
 }
+# =========================
+# DATABASE
+# =========================
+def get_connection():
+    conn = sqlite3.connect(DATABASE_NAME)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def init_db():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            email TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS personality_tests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL UNIQUE,
+            q1 TEXT NOT NULL,
+            q2 TEXT NOT NULL,
+            q3 TEXT NOT NULL,
+            q4 TEXT NOT NULL,
+            q5 TEXT NOT NULL,
+            q6 TEXT NOT NULL,
+            q7 TEXT NOT NULL,
+            q8 TEXT NOT NULL,
+            q9 TEXT NOT NULL,
+            q10 TEXT NOT NULL,
+            q11 TEXT NOT NULL,
+            q12 TEXT NOT NULL,
+            q13 TEXT NOT NULL,
+            q14 TEXT NOT NULL,
+            q15 TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+init_db()
