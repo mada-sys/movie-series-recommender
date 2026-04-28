@@ -310,3 +310,110 @@ useEffect(() => {
       cancelled = true;
     };
   }, [route, user?.id, watchedItems]);
+
+  const fetchPersonalityQuestions = async () => {
+    if (personalityQuestions.length > 0) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/personality-questions`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not load personality questions.");
+      }
+
+      setPersonalityQuestions(data);
+    } catch (err) {
+      setPersonalityError(err.message || "Could not load personality questions.");
+    }
+  };
+
+  const fetchPersonalityData = async (userId) => {
+    setPersonalityLoading(true);
+    setPersonalityError("");
+
+    try {
+      const response = await fetch(`${API_BASE}/personality-test/${userId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not load personality test.");
+      }
+
+      if (data.has_test) {
+        setPersonalityAnswers(data.answers || createEmptyAnswers());
+        setPersonalityProfile(data.profile || null);
+        updateUser({ has_personality_test: true });
+      } else {
+        setPersonalityAnswers(createEmptyAnswers());
+        setPersonalityProfile(null);
+        setPersonalityRecommendations([]);
+        setPersonalityPage(1);
+        setPersonalityHasMore(false);
+        updateUser({ has_personality_test: false });
+      }
+    } catch (err) {
+      setPersonalityError(err.message || "Could not load personality test.");
+    } finally {
+      setPersonalityLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleContentTypeChange = (newType) => {
+    if (newType === contentType) return;
+    setContentType(newType);
+    resetAllRecommendations();
+  };
+
+  const fetchManualRecommendations = async (query, pageNumber, append) => {
+    if (!query) return;
+
+    if (append) {
+      setManualLoadingMore(true);
+    } else {
+      setManualLoading(true);
+      setManualRecommendations([]);
+    }
+    setManualError("");
+
+    try {
+      const response = await fetch(`${API_BASE}/recommend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...query,
+          page: pageNumber
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong.");
+      }
+
+      const newItems = data.recommendations || [];
+
+      setManualRecommendations((prev) => (append ? [...prev, ...newItems] : newItems));
+      setManualPage(pageNumber);
+      setManualHasMore(Boolean(data.has_more));
+    } catch (err) {
+      setManualError(err.message || "Request failed.");
+      if (!append) {
+        setManualRecommendations([]);
+        setManualHasMore(false);
+      }
+    } finally {
+      setManualLoading(false);
+      setManualLoadingMore(false);
+    }
+  };
