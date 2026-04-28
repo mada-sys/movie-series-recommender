@@ -884,3 +884,90 @@ def get_media_details(item_id, content_type):
 
     MEDIA_DETAILS_CACHE[cache_key] = details
     return details
+# =========================
+# SCORING
+# =========================
+def score_item(item, selected_genre, selected_mood, selected_duration, selected_language, content_type):
+    score = 0
+    reasons = []
+
+    genre_ids = item.get("genre_ids", [])
+    original_language = item.get("original_language")
+    vote_average = item.get("vote_average") or 0
+    popularity = item.get("popularity") or 0
+
+    genre_map = get_genre_map(content_type)
+    selected_genre_id = genre_map.get(selected_genre)
+    selected_language_code = LANGUAGE_MAP.get(selected_language)
+    mood_bonus_genres = get_mood_bonus_genres(selected_mood, content_type)
+
+    if selected_genre_id and selected_genre_id in genre_ids:
+        score += 5
+        reasons.append("matches your selected genre")
+
+    if any(genre_id in genre_ids for genre_id in mood_bonus_genres):
+        score += 3
+        reasons.append("fits your selected mood")
+
+    if selected_language_code and original_language == selected_language_code:
+        score += 2
+        reasons.append("matches your preferred language")
+
+    # Duration only applies for movies - TV doesn't return runtime from discover.
+    if content_type == "movie" and selected_duration in DURATION_MAP:
+        score += 2
+        reasons.append("fits your preferred duration")
+
+    if vote_average >= 7.5:
+        score += 2
+        reasons.append("has a strong rating")
+    elif vote_average >= 6.5:
+        score += 1
+
+    if popularity >= 100:
+        score += 1
+        reasons.append("is popular on TMDb")
+
+    return score, reasons
+
+
+def score_item_by_personality(item, profile, content_type):
+    score = 0
+    reasons = []
+
+    genre_ids = item.get("genre_ids", [])
+    vote_average = item.get("vote_average") or 0
+    popularity = item.get("popularity") or 0
+
+    genre_map = get_genre_map(content_type)
+    genre_scores_raw = profile["genre_scores_raw"]
+
+    matched_genres = []
+    for genre_name in profile["recommended_genres"][:5]:
+        genre_id = genre_map.get(genre_name)
+        if genre_id and genre_id in genre_ids:
+            matched_genres.append(genre_name)
+            score += genre_scores_raw.get(genre_name, 0)
+
+    mood_key = profile["mood_profile_key"]
+    mood_genre_names = MOOD_PROFILE_TO_GENRES.get(mood_key, [])
+    mood_genre_ids = [genre_map[name] for name in mood_genre_names if name in genre_map]
+
+    if any(g in genre_ids for g in mood_genre_ids):
+        score += 4
+        reasons.append(MOOD_PROFILE_REASONS[mood_key])
+
+    if matched_genres:
+        reasons.append(f"aligned genres: {', '.join(matched_genres[:3])}")
+
+    if vote_average >= 7.5:
+        score += 2
+        reasons.append("has a strong rating")
+    elif vote_average >= 6.5:
+        score += 1
+
+    if popularity >= 100:
+        score += 1
+        reasons.append("is popular on TMDb")
+
+    return round(score, 2), reasons
