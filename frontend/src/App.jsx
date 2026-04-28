@@ -717,3 +717,127 @@ const handleGetPersonalityRecommendations = async () => {
     boxShadow: "0 8px 18px rgba(0,0,0,0.14)",
     whiteSpace: "nowrap"
   });
+
+ const trailerBtnStyle = (active = false) => ({
+    border: "1px solid #f0c7b1",
+    borderRadius: "12px",
+    padding: "10px 14px",
+    fontSize: "0.92rem",
+    fontWeight: 700,
+    cursor: "pointer",
+    background: active ? "#7c4a35" : "#fff7f2",
+    color: active ? "#ffffff" : "#7c4a35",
+    boxShadow: "0 6px 16px rgba(124,74,53,0.12)"
+  });
+
+  const formatRuntimeLabel = (runtimeMinutes) => {
+    const totalMinutes = Number(runtimeMinutes || 0);
+    if (!totalMinutes) return null;
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours && minutes) return `${hours}h ${minutes}m`;
+    if (hours) return `${hours}h`;
+    return `${minutes}m`;
+  };
+
+  const formatSeriesInfo = (item) => {
+    if (item.content_type !== "tv") return null;
+
+    const parts = [];
+
+    if (item.number_of_seasons) {
+      parts.push(
+        `${item.number_of_seasons} ${
+          item.number_of_seasons === 1 ? "season" : "seasons"
+        }`
+      );
+    }
+
+    if (item.number_of_episodes) {
+      parts.push(
+        `${item.number_of_episodes} ${
+          item.number_of_episodes === 1 ? "episode" : "episodes"
+        }`
+      );
+    }
+
+    return parts.length > 0 ? parts.join(" | ") : null;
+  };
+
+  const getMediaLengthLabel = (item) => {
+    if ((item.content_type || "movie") === "tv") {
+      return formatSeriesInfo(item);
+    }
+
+    return formatRuntimeLabel(item.runtime_minutes);
+  };
+
+  const toggleTrailer = (movie) => {
+    const mediaKey = getMediaCardKey(movie);
+
+    setOpenTrailers((prev) => ({
+      ...prev,
+      [mediaKey]: !prev[mediaKey]
+    }));
+  };
+
+  const isTrailerOpen = (movie) => Boolean(openTrailers[getMediaCardKey(movie)]);
+
+  const renderTrailerSection = (movie) => {
+    if (!movie.trailer_embed_url) return null;
+
+    const trailerOpen = isTrailerOpen(movie);
+
+    return (
+      <div className="movie-trailer-section">
+        <button
+          type="button"
+          onClick={() => toggleTrailer(movie)}
+          style={trailerBtnStyle(trailerOpen)}
+        >
+          {trailerOpen ? "Hide trailer" : "Watch the trailer"}
+        </button>
+
+        {trailerOpen && (
+          <div className="movie-trailer-frame">
+            <iframe
+              src={movie.trailer_embed_url}
+              title={`Trailer - ${movie.title}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderWatchedRating = (movie) => {
+    const currentRating = Number(movie.user_rating || 5);
+
+    return (
+      <div className="movie-rating-card">
+        <div className="movie-rating-top">
+          <strong>Your rating</strong>
+          <span>{currentRating}/10</span>
+        </div>
+
+        <input
+          type="range"
+          min="1"
+          max="10"
+          step="1"
+          value={currentRating}
+          onChange={(e) => handleWatchedRatingChange(movie, e.target.value)}
+          className="movie-rating-slider"
+        />
+
+        <div className="movie-rating-scale">
+          <span>1</span>
+          <span>10</span>
+        </div>
+      </div>
+    );
+  };
