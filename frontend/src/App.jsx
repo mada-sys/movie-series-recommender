@@ -1661,3 +1661,353 @@ if (route === "/watched") {
       </div>
     );
   }
+
+
+  return (
+    <div className="app-page">
+      <div className="bg-shape shape-1"></div>
+      <div className="bg-shape shape-2"></div>
+      <div className="bg-shape shape-3"></div>
+
+      <div className="app-container">
+        <div className="topbar">
+          <div>
+            <div className="topbar-badge">Personalized picks</div>
+            <h1>Movie & Series Recommendation System</h1>
+            <p>
+              Choose between manual recommendations and automatic picks based on your
+              personality profile.
+            </p>
+          </div>
+
+          <div className="topbar-right">
+            <div className="welcome-box">
+              Welcome, <strong>{user?.username || "User"}</strong>
+            </div>
+            <button onClick={handleLogout} className="logout-btn">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="glass-panel"
+          style={{
+            padding: "22px",
+            borderRadius: "22px",
+            marginBottom: "26px"
+          }}
+        >
+          <div className="section-heading">
+            <h2>Choose your recommendation mode</h2>
+            <p>
+              You can use your saved personality profile or manually select today's
+              viewing preferences.
+            </p>
+          </div>
+
+          {renderContentTypeToggle()}
+
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginTop: "14px"
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setDashboardTab("personality");
+                handleGetPersonalityRecommendations();
+              }}
+              style={actionBtnStyle(dashboardTab === "personality")}
+            >
+              Recommend by personality
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDashboardTab("manual")}
+              style={actionBtnStyle(dashboardTab === "manual")}
+            >
+              Recommend manually
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/watched")}
+              style={secondaryBtnStyle}
+            >
+              Watched list
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRetakeTest}
+              style={secondaryBtnStyle}
+            >
+              Retake personality test
+            </button>
+          </div>
+        </div>
+
+        {dashboardTab === "home" && (
+          <div className="main-grid">
+            <section className="glass-panel form-panel">
+              <div className="section-heading">
+                <h2>Your saved profile</h2>
+                <p>Quick overview of the cinematic personality you built.</p>
+              </div>
+              {renderProfileCard()}
+            </section>
+
+            <section className="glass-panel info-panel">
+              <div className="section-heading">
+                <h2>How it works</h2>
+                <p>A dual recommendation flow built around your style.</p>
+              </div>
+
+              <div className="info-list">
+                <div className="info-item">
+                  <span>01</span>
+                  <div>
+                    <h4>Personality mode</h4>
+                    <p>Uses your saved 15-question test to recommend movies or TV series automatically.</p>
+                  </div>
+                </div>
+
+                <div className="info-item">
+                  <span>02</span>
+                  <div>
+                    <h4>Manual mode</h4>
+                    <p>Lets you choose genre, mood, duration and language yourself.</p>
+                  </div>
+                </div>
+
+                <div className="info-item">
+                  <span>03</span>
+                  <div>
+                    <h4>Movies or series</h4>
+                    <p>Switch between movies and TV series at any time with a single click.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {dashboardTab === "manual" && (
+          <>
+            <div className="main-grid">
+              <section className="glass-panel form-panel">
+                <div className="section-heading">
+                  <h2>Manual recommendations</h2>
+                  <p>Tell us what you feel like watching today.</p>
+                </div>
+
+                <form onSubmit={handleManualSubmit} className="recommend-form">
+                  <div className="form-group">
+                    <label>Genre</label>
+                    <select
+                      name="genre"
+                      value={formData.genre}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Choose genre</option>
+                      <option value="Sci-Fi">Sci-Fi</option>
+                      <option value="Action">Action</option>
+                      <option value="Romance">Romance</option>
+                      <option value="Comedy">Comedy</option>
+                      <option value="Drama">Drama</option>
+                      <option value="Mystery">Mystery</option>
+                      <option value="Crime">Crime</option>
+                      <option value="Animation">Animation</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Mood</label>
+                    <select
+                      name="mood"
+                      value={formData.mood}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Choose mood</option>
+                      <option value="Intense">Intense</option>
+                      <option value="Dark">Dark</option>
+                      <option value="Emotional">Emotional</option>
+                      <option value="Fun">Fun</option>
+                    </select>
+                  </div>
+
+                  {contentType === "movie" && (
+                    <div className="form-group">
+                      <label>Duration</label>
+                      <select
+                        name="duration"
+                        value={formData.duration}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Choose duration</option>
+                        <option value="Short">Short</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Long">Long</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>Language</label>
+                    <select
+                      name="language"
+                      value={formData.language}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Choose language</option>
+                      <option value="English">English</option>
+                      <option value="French">French</option>
+                      <option value="Spanish">Spanish</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="recommend-btn"
+                    disabled={manualLoading}
+                    style={{
+                      background: "#111827",
+                      color: "#ffffff",
+                      border: "none"
+                    }}
+                  >
+                    {manualLoading
+                      ? "Searching..."
+                      : `Get manual ${contentTypeLabel}`}
+                  </button>
+                </form>
+              </section>
+
+              <section className="glass-panel info-panel">
+                <div className="section-heading">
+                  <h2>Manual mode</h2>
+                  <p>
+                    This mode is useful when you want recommendations for a specific
+                    moment.
+                  </p>
+                </div>
+
+                <div className="info-list">
+                  <div className="info-item">
+                    <span>01</span>
+                    <div>
+                      <h4>Pick your current vibe</h4>
+                      <p>Use mood and genre to guide the search more directly.</p>
+                    </div>
+                  </div>
+
+                  <div className="info-item">
+                    <span>02</span>
+                    <div>
+                      <h4>Control the experience</h4>
+                      <p>
+                        Choose the runtime and original language you want right now.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="info-item">
+                    <span>03</span>
+                    <div>
+                      <h4>Instant list</h4>
+                      <p>
+                        Get {contentTypeLabel} ranked by the compatibility score from
+                        the backend.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {renderMovieGrid({
+              items: manualRecommendations,
+              isLoading: manualLoading,
+              currentError: manualError,
+              emptyText: `No manual ${contentTypeLabel} yet. Choose your preferences to begin.`,
+              onLoadMore: handleManualLoadMore,
+              hasMoreItems: manualHasMore,
+              isLoadingMore: manualLoadingMore
+            })}
+          </>
+        )}
+
+        {dashboardTab === "personality" && (
+          <>
+            {renderProfileCard()}
+
+            <div
+              className="glass-panel"
+              style={{
+                padding: "22px",
+                borderRadius: "22px",
+                marginBottom: "26px"
+              }}
+            >
+              <div className="section-heading">
+                <h2>Personality-based recommendations</h2>
+                <p>
+                  Use your saved profile to automatically discover {contentTypeLabel}{" "}
+                  that fit your personality.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                  marginTop: "14px"
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleGetPersonalityRecommendations}
+                  disabled={personalityRecommendationsLoading}
+                  className="recommend-btn"
+                  style={{
+                    width: "auto",
+                    background: "#111827",
+                    color: "#ffffff",
+                    border: "none"
+                  }}
+                >
+                  {personalityRecommendationsLoading
+                    ? "Loading recommendations..."
+                    : `Get ${contentTypeSingular} recommendations for my personality`}
+                </button>
+              </div>
+            </div>
+
+            {renderMovieGrid({
+              items: personalityRecommendations,
+              isLoading: personalityRecommendationsLoading,
+              currentError: personalityRecommendationsError,
+              emptyText: `No personality-based ${contentTypeLabel} yet. Click the button above.`,
+              onLoadMore: handlePersonalityLoadMore,
+              hasMoreItems: personalityHasMore,
+              isLoadingMore: personalityLoadingMore
+            })}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;
